@@ -6,6 +6,7 @@
 char dtaUart[15];
 char dtaLen = 0;
 DFRobot_RGBLCD1602 lcd(/*lcdCols*/16,/*lcdRows*/2);  //16 characters and 2 lines of show
+void waitForTime(unsigned long timeToWait); 
 
 //Constants
 #define ROWS 4
@@ -16,6 +17,12 @@ const char kp4x4Keys[ROWS][COLS]  = {{'1', '2', '3', 'A'}, {'4', '5', '6', 'B'},
 
 const String pin = "1111";
 const int FingerPin = 1; 
+
+unsigned long previousMillis = 0;
+const unsigned long interval = 2000; // 2 second interval
+const unsigned long interval1 = 4000; // 2 second interval
+const unsigned long doorOpenTime = 30000; // 30 second door open time
+const unsigned long doorblockedTime = 30000; // 30 second door open time
 
 String keyEntrer, Pass; 
 bool StatusPorte = false;
@@ -78,7 +85,14 @@ void readKp4x4() {
                 lcd.print("Pin correct !");
                 lcd.setCursor(0,1); 
                 lcd.print("Scan Finger now");
-                delay(2000);
+                /*
+                while (millis() - previousMillis < interval) {
+                 // do nothing
+                }
+                */ 
+                waitForTime(interval);
+                previousMillis = millis(); // reset the timer
+                
                 while (digitalRead(FingerPin)!= 1)
                 {   
                     lcd.clear();
@@ -86,7 +100,10 @@ void readKp4x4() {
                     lcd.print("Please scan ");
                     lcd.setCursor(0,1); 
                     lcd.print("Your Finger");
-                    delay(500);
+                    if (millis() - previousMillis >= 500) {
+                            previousMillis = millis(); // reset the timer
+                            // do something every 500ms
+                    }
                 }
                 
                 lcd.clear();
@@ -95,7 +112,7 @@ void readKp4x4() {
                 StatusPorte = true; 
                 appendPayload("PorteStatus", StatusPorte);  //Ajout de la donnée  au message MQTT
                 sendPayload();  //Envoie du message via le protocole MQTT
-                delay(30000); 
+                waitForTime(doorOpenTime);
                 StatusPorte = false; 
                 keyEntrer = "";
                 Pass = "";
@@ -106,7 +123,7 @@ void readKp4x4() {
                 Serial.println("Veuillez entrer votre code pin et taper # pour confirmer: "); 
                 appendPayload("PorteStatus", StatusPorte);  //Ajout de la donnée  au message MQTT
                 sendPayload();  //Envoie du message via le protocole MQTT
-                delay(4000); 
+                waitForTime(interval1);
                 lcd.clear();
 
                 
@@ -124,7 +141,7 @@ void readKp4x4() {
                         lcd.print("Pour 30 minutes");
                         appendPayload("NbrErreurs", NbrErreurs);  //Ajout de la donnée  au message MQTT
                         sendPayload();  //Envoie du message via le protocole MQTT
-                        delay(30000);
+                        waitForTime(doorblockedTime);
                         NbrErreurs = 0 ; 
                         appendPayload("NbrErreurs", NbrErreurs);  //Ajout de la donnée  au message MQTT
                         sendPayload();  //Envoie du message via le protocole MQTT
@@ -135,7 +152,7 @@ void readKp4x4() {
                         lcd.print("Erreur Pin !! "); 
                         lcd.setCursor(0,1);
                         lcd.print("Reessayez ...."); 
-                        delay(2000);
+                        waitForTime(interval1);
                         Serial.print("Veuillez reentrer votre code pin : "); 
                     }
                     
@@ -157,6 +174,13 @@ void readKp4x4() {
       }     
  }
 
+}
+
+void waitForTime(unsigned long timeToWait) {
+  unsigned long previousMillis = millis();
+  while (millis() - previousMillis < timeToWait) {
+    // do nothing
+  }
 }
 
 
